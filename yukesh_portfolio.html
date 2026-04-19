@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yukesh Meganathan | Tool Design Engineer</title>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: #080d18;
+      color: #e2e8f0;
+      font-family: 'Exo 2', sans-serif;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #080d18; }
+    ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
+
+    /* ── Animated grid background ── */
+    .grid-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px);
+      background-size: 52px 52px;
+      animation: gridMove 28s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes gridMove { to { background-position: 52px 52px; } }
+
+    /* ── Scanner line ── */
+    .scanner {
+      position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 1;
+      background: linear-gradient(90deg, transparent, #3b82f6, #f97316, transparent);
+      animation: scan 7s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes scan { 0%,100%{top:0;opacity:0;} 8%{opacity:1;} 92%{opacity:1;} 50%{top:100vh;} }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      transition: background .3s, border-color .3s;
+    }
+    nav.scrolled {
+      background: rgba(8,13,24,0.92);
+      border-bottom: 1px solid rgba(59,130,246,0.2);
+      backdrop-filter: blur(10px);
+    }
+    .nav-logo {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700; font-size: 1.3rem;
+      letter-spacing: .2em; color: #60a5fa;
+      text-shadow: 0 0 16px rgba(96,165,250,0.6);
+    }
+    .nav-logo span { color: #f97316; }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600; font-size: .82rem;
+      letter-spacing: .15em; text-transform: uppercase;
+      text-decoration: none; color: #94a3b8;
+      transition: color .2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: #f97316; }
+
+    /* ── Sections ── */
+    section { position: relative; z-index: 10; padding: 100px 48px; max-width: 1100px; margin: 0 auto; }
+
+    /* ── Fade-in ── */
+    .fade-in { opacity: 0; transform: translateY(30px); transition: opacity .7s ease, transform .7s ease; }
+    .fade-in.visible { opacity: 1; transform: none; }
+
+    /* ── Section Title ── */
+    .section-title {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 48px;
+    }
+    .section-title .num {
+      font-family: 'Share Tech Mono', monospace;
+      color: rgba(249,115,22,0.45); font-size: .85rem;
+    }
+    .section-title .line-left {
+      height: 1px; width: 55px;
+      background: linear-gradient(to right, rgba(249,115,22,0.4), transparent);
+    }
+    .section-title h2 {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700; font-size: 2.6rem;
+      letter-spacing: .2em; text-transform: uppercase; color: #fff;
+    }
+    .section-title .line-right {
+      flex: 1; height: 1px;
+      background: linear-gradient(to right, rgba(59,130,246,0.15), transparent);
+    }
+
+    /* ── Panel / Card ── */
+    .panel {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(59,130,246,0.18);
+      border-radius: 3px;
+      backdrop-filter: blur(8px);
+      transition: border-color .3s, box-shadow .3s;
+      position: relative;
+    }
+    .panel:hover {
+      border-color: rgba(249,115,22,0.4);
+      box-shadow: 0 0 24px rgba(249,115,22,0.08);
+    }
+    .panel-body { padding: 28px 32px; }
+
+    /* corner decorations */
+    .corner::before, .corner::after {
+      content: ''; position: absolute; width: 16px; height: 16px;
+    }
+    .corner::before { top:0; left:0; border-top: 2px solid #f97316; border-left: 2px solid #f97316; }
+    .corner::after  { bottom:0; right:0; border-bottom: 2px solid #f97316; border-right: 2px solid #f97316; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border: 1px solid rgba(249,115,22,0.35);
+      background: rgba(249,115,22,0.07);
+      border-radius: 2px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .68rem; letter-spacing: .1em;
+      text-transform: uppercase; color: #fb923c;
+    }
+
+    /* ── Hero ── */
+    #home {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding-top: 0; max-width: 100%;
+    }
+    .hero-inner { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+    .hero-badge { margin-bottom: 28px; }
+    .hero-name-1 {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700; font-size: clamp(3.2rem, 9vw, 6.5rem);
+      letter-spacing: .04em; color: #fff;
+      text-shadow: 0 0 24px rgba(59,130,246,0.6), 0 0 48px rgba(59,130,246,0.3);
+      line-height: 1;
+    }
+    .hero-name-2 {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700; font-size: clamp(2.6rem, 7.5vw, 5.2rem);
+      letter-spacing: .04em; color: #f97316;
+      text-shadow: 0 0 20px rgba(249,115,22,0.7), 0 0 40px rgba(249,115,22,0.35);
+      line-height: 1; margin-bottom: 24px;
+    }
+    .hero-role {
+      font-family: 'Share Tech Mono', monospace;
+      color: #60a5fa; font-size: 1.3rem; margin-bottom: 24px;
+    }
+    .hero-role::after { content: '|'; animation: blink 1s step-end infinite; color: #f97316; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+    .hero-desc {
+      color: #94a3b8; font-size: 1rem; max-width: 520px;
+      margin: 0 auto 40px; line-height: 1.8;
+    }
+    .hero-desc .hl-blue   { color: #93c5fd; }
+    .hero-desc .hl-orange { color: #f97316; }
+    .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      padding: 14px 36px;
+      font-family: 'Rajdhani', sans-serif; font-weight: 700;
+      font-size: .82rem; letter-spacing: .18em; text-transform: uppercase;
+      background: #f97316; color: #000; text-decoration: none;
+      transition: background .2s, box-shadow .2s;
+    }
+    .btn-primary:hover { background: #fb923c; box-shadow: 0 0 22px rgba(249,115,22,0.5); }
+    .btn-outline {
+      padding: 14px 36px;
+      font-family: 'Rajdhani', sans-serif; font-weight: 700;
+      font-size: .82rem; letter-spacing: .18em; text-transform: uppercase;
+      border: 1px solid #3b82f6; color: #93c5fd; text-decoration: none;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-outline:hover { background: rgba(59,130,246,0.1); border-color: #93c5fd; }
+    .scroll-indicator {
+      margin-top: 72px; display: flex; flex-direction: column;
+      align-items: center; gap: 8px; opacity: .35;
+    }
+    .scroll-indicator span {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .7rem; letter-spacing: .2em;
+    }
+    .scroll-line {
+      width: 1px; height: 48px;
+      background: linear-gradient(to bottom, #60a5fa, transparent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:.3;} 50%{opacity:1;} }
+
+    /* ── About ── */
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .about-bio { color: #94a3b8; line-height: 1.9; }
+    .about-bio p { margin-bottom: 16px; }
+    .about-bio .hl-orange { color: #f97316; font-weight: 600; }
+    .about-bio .hl-blue   { color: #93c5fd; font-weight: 600; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .stat-card { padding: 18px 20px; }
+    .stat-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .65rem; letter-spacing: .12em;
+      text-transform: uppercase; color: rgba(249,115,22,0.6);
+      margin-bottom: 6px;
+    }
+    .stat-value { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 1rem; color: #fff; }
+
+    /* ── Skills ── */
+    .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .skill-card { padding: 20px 24px; }
+    .skill-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .skill-name { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 1rem; color: #fff; }
+    .skill-pct { font-family: 'Share Tech Mono', monospace; color: #f97316; font-size: .85rem; }
+    .skill-track {
+      height: 5px; background: rgba(59,130,246,0.12);
+      border-radius: 2px; overflow: hidden;
+    }
+    .skill-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #f97316);
+      border-radius: 2px;
+      width: 0; transition: width 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    .tools-row {
+      margin-top: 24px; padding: 22px 28px;
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+    }
+
+    /* ── Projects ── */
+    .projects-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .project-card { padding: 24px; }
+    .project-type { margin-bottom: 12px; }
+    .project-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700; font-size: 1.15rem; color: #fff;
+      margin-bottom: 10px; transition: color .2s;
+    }
+    .project-card:hover .project-title { color: #f97316; }
+    .project-desc { color: #64748b; font-size: .88rem; line-height: 1.7; margin-bottom: 16px; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .tag {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .68rem; color: #93c5fd;
+      border: 1px solid rgba(59,130,246,0.25);
+      padding: 2px 8px; border-radius: 2px;
+    }
+
+    /* ── Contact ── */
+    #contact { text-align: center; }
+    .contact-card { max-width: 620px; margin: 0 auto; padding: 48px 52px; }
+    .contact-intro { color: #94a3b8; margin-bottom: 36px; line-height: 1.8; }
+    .contact-rows { text-align: left; margin-bottom: 36px; }
+    .contact-row {
+      display: flex; gap: 20px; align-items: flex-start;
+      border-bottom: 1px solid rgba(59,130,246,0.12);
+      padding-bottom: 14px; margin-bottom: 14px;
+    }
+    .contact-lbl {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .65rem; letter-spacing: .12em;
+      text-transform: uppercase; color: rgba(249,115,22,0.6);
+      width: 90px; flex-shrink: 0; padding-top: 2px;
+    }
+    .contact-val { color: #fff; font-size: .95rem; }
+    .contact-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 10;
+      border-top: 1px solid rgba(59,130,246,0.12);
+      padding: 24px; text-align: center;
+    }
+    footer p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .68rem; letter-spacing: .2em;
+      color: rgba(148,163,184,0.35);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      .nav-links { gap: 20px; }
+      section { padding: 80px 24px; }
+      .about-grid  { grid-template-columns: 1fr; }
+      .skills-grid { grid-template-columns: 1fr; }
+      .projects-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 580px) {
+      .nav-links { gap: 14px; }
+      .nav-links a { font-size: .72rem; }
+      .projects-grid { grid-template-columns: 1fr; }
+      .stats-grid    { grid-template-columns: 1fr; }
+      .contact-card  { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── DATA ─────────────────────────────────────── */
+const skills = [
+  { name: 'SolidWorks',           pct: 92, cat: 'CAD' },
+  { name: 'CATIA V5',             pct: 88, cat: 'CAD' },
+  { name: 'Jig & Fixture Design', pct: 95, cat: 'Design' },
+  { name: 'GD&T / Tolerancing',   pct: 87, cat: 'Design' },
+  { name: 'CAD/CAM Programming',  pct: 82, cat: 'Manufacturing' },
+  { name: 'Excel & Macros (VBA)', pct: 80, cat: 'Automation' },
+  { name: 'SolidWorks Macros',    pct: 78, cat: 'Automation' },
+  { name: 'Aerospace GD&T',       pct: 85, cat: 'Aerospace' },
+];
+
+const projects = [
+  {
+    title: 'Aerospace Milling Jig',
+    type: 'Jig Design',
+    desc: 'Precision milling jig for complex aerospace aluminium structural components. Achieved ±0.02 mm repeatability across 5-axis CNC machining operations.',
+    tags: ['SolidWorks', 'Aluminium Alloy', '5-Axis CNC', 'GD&T'],
+  },
+  {
+    title: 'Turbine Blade Fixture',
+    type: 'Fixture Design',
+    desc: 'Hydraulic clamping fixture for turbine blade finishing operations, eliminating part distortion during tight-tolerance surface grinding.',
+    tags: ['CATIA V5', 'Hydraulic Clamp', 'Turbine', 'Aerospace'],
+  },
+  {
+    title: 'Modular CMM Fixture',
+    type: 'Inspection Fixture',
+    desc: 'Reconfigurable modular fixture system for CMM inspection of aerospace brackets — reduced setup time by 60% through standardised tooling.',
+    tags: ['CMM', 'Modular', 'Inspection', 'Aerospace'],
+  },
+  {
+    title: 'BOM Automation Tool',
+    type: 'Excel Macro / VBA',
+    desc: 'VBA macro tool that auto-generates Bills of Materials from SolidWorks assembly trees, saving 4+ hours per project cycle.',
+    tags: ['Excel VBA', 'SolidWorks', 'BOM', 'Automation'],
+  },
+  {
+    title: 'Drilling Template Jig',
+    type: 'Jig Design',
+    desc: 'Drill-guide jig for precise hole-pattern transfer on aircraft fuselage panels, designed for field maintenance environments.',
+    tags: ['SolidWorks', 'Aerospace', 'Sheet Metal', 'Drilling'],
+  },
+  {
+    title: 'CAM Post-Processor Setup',
+    type: 'CAD / CAM',
+    desc: 'Configured and validated CAM post-processor for multi-axis VMC. Reduced programming time by 35% through toolpath templates.',
+    tags: ['CAM', 'VMC', 'Post-Processor', 'Toolpath'],
+  },
+];
+
+const navItems = ['Home', 'About', 'Skills', 'Projects', 'Contact'];
+
+/* ── useFadeIn ─────────────────────────────────── */
+function useFadeIn() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { el.classList.add('visible'); obs.disconnect(); }
+    }, { threshold: 0.12 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
+}
+
+/* ── SectionTitle ─────────────────────────────── */
+function SectionTitle({ num, title }) {
+  return (
+    <div className="section-title">
+      <span className="num">{num}</span>
+      <div className="line-left" />
+      <h2>{title}</h2>
+      <div className="line-right" />
+    </div>
+  );
+}
+
+/* ── NavBar ───────────────────────────────────── */
+function NavBar({ active, setActive }) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', h);
+    return () => window.removeEventListener('scroll', h);
+  }, []);
+  return (
+    <nav className={scrolled ? 'scrolled' : ''}>
+      <div className="nav-logo">YM<span>.</span></div>
+      <ul className="nav-links">
+        {navItems.map(n => (
+          <li key={n}>
+            <a href={`#${n.toLowerCase()}`}
+               className={active === n ? 'active' : ''}
+               onClick={() => setActive(n)}>
+              {n}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/* ── Hero ─────────────────────────────────────── */
+function Hero({ setActive }) {
+  const [typed, setTyped] = useState('');
+  const full = 'Tool Design Engineer';
+  useEffect(() => {
+    let i = 0;
+    const t = setInterval(() => { i++; setTyped(full.slice(0, i)); if (i === full.length) clearInterval(t); }, 65);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <section id="home">
+      <div className="hero-inner">
+        <div className="hero-badge"><span className="badge">LMW · Advance Technology Center</span></div>
+        <div className="hero-name-1">YUKESH</div>
+        <div className="hero-name-2">MEGANATHAN</div>
+        <div className="hero-role">{typed}</div>
+        <p className="hero-desc">
+          Designing precision <span className="hl-blue">Jigs &amp; Fixtures</span> for Aerospace Machining Components.
+          Expert in <span className="hl-orange">SolidWorks · CATIA · CAD/CAM</span> with automation through VBA macros.
+        </p>
+        <div className="hero-buttons">
+          <a href="#projects" className="btn-primary" onClick={() => setActive('Projects')}>View Projects</a>
+          <a href="#contact"  className="btn-outline"  onClick={() => setActive('Contact')}>Contact Me</a>
+        </div>
+        <div className="scroll-indicator">
+          <span>SCROLL</span>
+          <div className="scroll-line" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── About ────────────────────────────────────── */
+function About() {
+  const ref = useFadeIn();
+  return (
+    <section id="about" ref={ref} className="fade-in">
+      <SectionTitle num="01" title="About Me" />
+      <div className="about-grid">
+        <div className="panel corner">
+          <div className="panel-body about-bio">
+            <p>I am <span className="hl-orange">Yukesh Meganathan</span>, a Tool Design Engineer at
+              <span className="hl-blue"> LMW Advance Technology Center (ATC)</span>, specialising in the design of
+              Jigs and Fixtures for aerospace machining components.</p>
+            <p>My work focuses on ensuring precision, repeatability, and safety across CNC machining operations for
+              aerospace-grade materials. I combine deep CAD expertise with manufacturing process knowledge to deliver
+              tooling solutions that meet the strictest aerospace tolerances.</p>
+            <p>Beyond design, I leverage Excel VBA and SolidWorks / CATIA macros to automate repetitive engineering
+              tasks — improving team productivity and reducing documentation errors.</p>
+          </div>
+        </div>
+        <div className="stats-grid">
+          {[
+            { label: 'Company',    value: 'LMW ATC' },
+            { label: 'Role',       value: 'Tool Design Engineer' },
+            { label: 'Domain',     value: 'Aerospace Machining' },
+            { label: 'Speciality', value: 'Jig & Fixture Design' },
+            { label: 'CAD Tools',  value: 'SolidWorks · CATIA V5' },
+            { label: 'Automation', value: 'VBA Macros · CAD/CAM' },
+          ].map(s => (
+            <div key={s.label} className="panel stat-card">
+              <div className="stat-label">{s.label}</div>
+              <div className="stat-value">{s.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Skills ───────────────────────────────────── */
+function Skills() {
+  const ref = useFadeIn();
+  const [go, setGo] = useState(false);
+  const innerRef = useRef(null);
+  useEffect(() => {
+    const el = innerRef.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setGo(true); }, { threshold: .2 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <section id="skills" ref={ref} className="fade-in">
+      <SectionTitle num="02" title="Skills & Tools" />
+      <div ref={innerRef} className="skills-grid">
+        {skills.map((s, i) => (
+          <div key={s.name} className="panel skill-card">
+            <div className="skill-header">
+              <div>
+                <span className="skill-name">{s.name}</span>
+                &nbsp;
+                <span className="badge">{s.cat}</span>
+              </div>
+              <span className="skill-pct">{s.pct}%</span>
+            </div>
+            <div className="skill-track">
+              <div className="skill-fill"
+                   style={{ width: go ? `${s.pct}%` : '0%', transitionDelay: `${i * 0.1}s` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="panel tools-row">
+        {['SolidWorks','CATIA V5','Excel VBA','CAD/CAM','GD&T','CMM','5-Axis CNC','Aerospace Standards'].map(t => (
+          <span key={t} className="badge">{t}</span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Projects ─────────────────────────────────── */
+function Projects() {
+  const ref = useFadeIn();
+  return (
+    <section id="projects" ref={ref} className="fade-in">
+      <SectionTitle num="03" title="Projects" />
+      <div className="projects-grid">
+        {projects.map((p, i) => (
+          <div key={i} className="panel corner project-card">
+            <div className="project-type"><span className="badge">{p.type}</span></div>
+            <div className="project-title">{p.title}</div>
+            <div className="project-desc">{p.desc}</div>
+            <div className="tag-row">
+              {p.tags.map(t => <span key={t} className="tag">{t}</span>)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Contact ──────────────────────────────────── */
+function Contact() {
+  const ref = useFadeIn();
+  return (
+    <section id="contact" ref={ref} className="fade-in">
+      <SectionTitle num="04" title="Contact" />
+      <div className="panel corner contact-card">
+        <p className="contact-intro">
+          Open to collaboration on aerospace tooling projects, CAD automation, or freelance engineering design work.
+          Let's connect!
+        </p>
+        <div className="contact-rows">
+          {[
+            { label: 'Name',   value: 'Yukesh Meganathan' },
+            { label: 'Role',   value: 'Tool Design Engineer — LMW ATC' },
+            { label: 'Domain', value: 'Aerospace Jig & Fixture Design' },
+            { label: 'Email',  value: 'yukesh@example.com' },
+          ].map(r => (
+            <div key={r.label} className="contact-row">
+              <span className="contact-lbl">{r.label}</span>
+              <span className="contact-val">{r.value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="contact-buttons">
+          <a href="mailto:yukesh@example.com" className="btn-primary">Send Email</a>
+          <a href="#" className="btn-outline">LinkedIn</a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Footer ───────────────────────────────────── */
+function Footer() {
+  return (
+    <footer>
+      <p>© 2025 YUKESH MEGANATHAN · TOOL DESIGN ENGINEER · LMW ATC</p>
+    </footer>
+  );
+}
+
+/* ── APP ──────────────────────────────────────── */
+function App() {
+  const [active, setActive] = useState('Home');
+  useEffect(() => {
+    const h = () => {
+      for (let i = navItems.length - 1; i >= 0; i--) {
+        const el = document.getElementById(navItems[i].toLowerCase());
+        if (el && window.scrollY >= el.offsetTop - 130) { setActive(navItems[i]); break; }
+      }
+    };
+    window.addEventListener('scroll', h);
+    return () => window.removeEventListener('scroll', h);
+  }, []);
+  return (
+    <>
+      <div className="grid-bg" />
+      <div className="scanner" />
+      <NavBar active={active} setActive={setActive} />
+      <Hero setActive={setActive} />
+      <About />
+      <Skills />
+      <Projects />
+      <Contact />
+      <Footer />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
